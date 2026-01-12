@@ -1,0 +1,27 @@
+[project]
+name = "rag-financial"
+version = "0.1.0"
+description = "End-to-end RAG system: PDF ingestion to Submission"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "langchain",
+    "langchain-community",
+    "langchain-ollama",
+    "langchain-huggingface",
+    "langchain-docling",
+    "docling",
+    "faiss-gpu-cu12",
+    "rapidfuzz",
+    "rank-bm25",
+    "pydantic",
+    "python-dotenv",
+    "requests",
+    "torch",
+    "tqdm",
+    "unstructured",
+    "sentence-transformers"
+]
+
+[tool.uv]
+dev-dependencies = ["mypy", "ruff"]
