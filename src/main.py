@@ -14,7 +14,6 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    # Default flow if no args: just run inference (assuming data exists)
     if not any(vars(args).values()):
         print("No arguments provided. Defaulting to --run.")
         args.run = True
@@ -42,9 +41,7 @@ def main() -> None:
         print("=== Inference Phase ===")
         from src.generation import run_inference
 
-        # Assuming we move the main logic from previous `main.py` to `src/generation.py` -> `run_inference`
-        # OR simply import the logic here.
-        from .inference_runner import run_pipeline  # Renamed for clarity
+        from .inference_runner import run_pipeline
 
         run_pipeline()
 

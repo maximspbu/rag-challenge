@@ -13,7 +13,7 @@ def run_pipeline() -> None:
     """
     Executes the inference pipeline.
     """
-    # 1. Load Data
+
     try:
         vector_db, documents, known_companies = load_resources()
     except Exception as e:
@@ -23,11 +23,9 @@ def run_pipeline() -> None:
 
     bm25, v_db, compressor = create_retriever_pipeline(vector_db, documents)
 
-    # 2. Build Chain
     retrieve_fn = build_retrieve_fn(v_db, bm25, compressor, known_companies)
     rag_chain = create_rag_chain(retrieve_fn)
 
-    # 3. Load Questions
     print(f"Loading questions from {QUESTIONS_PATH}")
     if not QUESTIONS_PATH.exists():
         print(f"Error: {QUESTIONS_PATH} not found.")
@@ -36,7 +34,6 @@ def run_pipeline() -> None:
     with open(QUESTIONS_PATH, "r") as f:
         questions: List[Dict[str, Any]] = json.load(f)
 
-    # 4. Inference
     answers_list: List[Dict[str, Any]] = []
 
     for i, item in enumerate(tqdm(questions, desc="Processing Questions")):
@@ -55,7 +52,6 @@ def run_pipeline() -> None:
             print(f"Error processing question {i}: {e}")
             answers_list.append({"question_text": q_text, "kind": q_kind, "value": "N/A", "references": []})
 
-    # 5. Save & Submit
     submission = {"team_email": TEAM_EMAIL, "submission_name": SUBMISSION_NAME, "answers": answers_list}
 
     with open(OUTPUT_FILE, "w") as f:

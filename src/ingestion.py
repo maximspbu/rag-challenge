@@ -18,7 +18,6 @@ from src.models import get_llm
 from src.utils import cleanup_memory
 
 
-# --- Metadata Extraction Schema ---
 class FileMetaData(BaseModel):
     company_name: str = Field(
         description="The exact name of the company this annual report belongs to, if there is no name, return 'Unknown'"
@@ -52,7 +51,6 @@ def run_ingestion() -> None:
     """
     print("Starting Ingestion Process...")
 
-    # 1. Setup Docling Converter
     accelerator_options = AcceleratorOptions(num_threads=4)
     pipeline_options = PdfPipelineOptions()
     pipeline_options.accelerator_options = accelerator_options
@@ -69,7 +67,6 @@ def run_ingestion() -> None:
         format_options={InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)},
     )
 
-    # 2. Identify Files
     if not os.path.exists(PDF_DIR):
         print(f"Error: PDF directory {PDF_DIR} does not exist.")
         return
@@ -78,7 +75,6 @@ def run_ingestion() -> None:
 
     print(f"Found {len(file_paths)} PDFs to process.")
 
-    # 3. Load and Chunk
     loader = DoclingLoader(
         file_paths,
         converter=converter,
@@ -86,27 +82,22 @@ def run_ingestion() -> None:
     )
 
     print("Lazy loading documents...")
-    docs = list(loader.lazy_load())  # Convert iterator to list to process
+    docs = list(loader.lazy_load())
 
     print(f"Generated {len(docs)} chunks. extracting metadata...")
 
-    # 4. Enrich Metadata (Company Name)
     llm = get_llm(model_name=OLLAMA_MODEL)
 
-    # We create a cache for source -> company_name to avoid re-querying for every chunk of the same file
     source_to_company: dict[str, str] = {}
 
     processed_docs: List[Document] = []
 
     for doc in tqdm(docs, desc="Enriching Metadata"):
-        # Normalize metadata
         try:
-            # Docling specific metadata access
             dl_meta = doc.metadata.get("dl_meta", {})
             origin = dl_meta.get("origin", {})
             filename = origin.get("filename", "unknown")
 
-            # Page index logic from original script
             try:
                 page_no = dl_meta["doc_items"][0]["prov"][0]["page_no"]
                 page_index = page_no - 1
@@ -117,7 +108,6 @@ def run_ingestion() -> None:
             doc.metadata["source"] = filename
             doc.metadata["page_index"] = page_index
 
-            # Company Name Extraction
             if filename not in source_to_company:
                 meta = extract_metadata_from_doc(doc.page_content, llm)
                 source_to_company[filename] = meta.company_name
@@ -130,7 +120,6 @@ def run_ingestion() -> None:
             print(f"Error processing doc chunk: {e}")
             continue
 
-    # 5. Save Splits
     print(f"Saving {len(processed_docs)} splits to {SPLITS_PATH}...")
     with open(SPLITS_PATH, "wb") as f:
         pickle.dump(processed_docs, f)

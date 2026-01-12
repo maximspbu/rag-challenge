@@ -28,34 +28,29 @@ def build_vector_index(batch_size: int = 20) -> None:
 
     embeddings = get_embeddings()
 
-    # Create empty index first or process first batch
     print("Initializing FAISS index with first batch...")
     first_batch = new_splits[:batch_size]
     vector_db = FAISS.from_documents(first_batch, embeddings)
 
-    # Process remaining batches
     for i in tqdm(range(batch_size, len(new_splits), batch_size), desc="Indexing Batches"):
         try:
             batch = new_splits[i : i + batch_size]
             vector_db.add_documents(batch)
 
-            # Memory Management from original script
             cleanup_memory()
 
-            # Periodic Save (optional safety)
             if i % 500 == 0:
                 vector_db.save_local(str(INDEX_PATH))
 
         except Exception as e:
             print(f"Error indexing batch {i}: {e}")
-            # Recovery logic from original script
+
             vector_db.save_local(str(INDEX_PATH))
             del vector_db
             cleanup_memory()
 
-            # Reload
             vector_db = FAISS.load_local(str(INDEX_PATH), embeddings, allow_dangerous_deserialization=True)
-            # Retry batch item by item
+
             for item in batch:
                 vector_db.add_documents([item])
 
